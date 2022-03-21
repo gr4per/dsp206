@@ -1,0 +1,110 @@
+DSP 206 Ethernet Interface
+
+CCode Name              RCode   Payload
+0x10  Login             0x10    none
+0x11  Logout            0x01    none
+0x12  Ping              0x01    none, sent after store preset, also after recall preset, also when waiting for user interaction e.g. password unlock - keep alive ?
+0x13  Version           0x13    none
+0x14  GetActivePreset   0x14    none
+0x15  SetUnit           0x01    1 byte 0:ms, 1: m, 2: ft (Global setting, but on Delay tab)
+0x19  DumpMemory        0x19    word offset (LB,HB), byte len // read and return len bytes of memory starting at offset - mem seems to end at 0x764 and there seems to be a limit of 0x37 for len
+0x20  LoadPreset        0x01    1 byte preset slot 0 = F00, 1-14 = U01-U20
+0x21  StorePreset       0x01    1 byte preset slot ID (x1 = U01 - x14=U20)
+0x22  GetPresetInfo     0x22    20 byte, one per preset slot. value is 0x0 if the preset is default, 0xff if has custom data
+0x24  SetExportPreset   0x01    1 byte preset slot (01 = U01, 14 = U20)
+0x26  SetPresetName     0x01    1 byte 0, then Preset name
+0x27  GetCurrentConfig  0x24    1 byte page ID (0-12), each page 50 bytes, last page 28
+0x28  GetExportConfig   0x28    1 byte page ID
+0x29  GetPresetName     0x29    1 byte preset ID ( 0 - 13)
+0x2a  CopyChannel       0x01    1 byte source ch ID, 1 byte dest ch ID
+0x2c  ?                 0x2c    00 27 0f 00 00 00 
+0x2d  Unlock            0x2d    byte 0x0, 4 byte password
+0x2f  Lock              0x01    4 byte password
+0x30  SetCompressor     0x01    byte ch ID, word ratio (0=1:1,1.1,1.3,1.5,1.7,2,2.5,3,3.5,4,5,6,8,10,20,f=flat) HB= 0, word attack LB, HB (0=1ms, e6 03 = 999ms), release (9 = 10ms, b7 b = 3000ms), word knee (0=0,c=12) HB always 0, word threshold: LB, HB 00 = -90dB, dc 00 = +20 db, i.e. 0.5dB steps
+0x31  SetLowPass        0x01    byte ch ID, word frequency (s. PEQ), byte slope/bypass (0=bypass, 1=BW-6,2=BL-6,3=BW-12,4=BL-12,5=LK-12,6=BW-18,7=BL-18,8=BW-24,9=BL-24,a=LK-24,b=BW-30,c=BL-30,d=BW-36,e=BL-36,f=LK-36,10=BW-42,11=BL-42,12=BW-48,13=BL-48,14=LK-48)
+0x32  SetHighPass       0x01    byte ch ID, word frequency (s. PEQ), byte slope/bypass (0=bypass, 1=BW-6,2=BL-6,3=BW-12,4=BL-12,5=LK-12,6=BW-18,7=BL-18,8=BW-24,9=BL-24,a=LK-24,b=BW-30,c=BL-30,d=BW-36,e=BL-36,f=LK-36,10=BW-42,11=BL-42,12=BW-48,13=BL-48,14=LK-48)
+0x33  SetPEQ            0x01    byte ch ID, byte PEQ slot ID, word gain (0=-12db, 78=0dB, f0=+12dB, 0.1dB steps), 
+                                word frequency (y = 19,692*EXP(0,0231*x)) ,byte Q (23=3, 0=0.4, 60=102, 61=108, 62=114, 63=121, 64=128), y = 0,3992e0,0577x
+                                byte type (0=Peak,1=LowShelf,2=HighShelf,3=LP-6dB,4=LP-12dB,5=HP-6dB,6=HP-12dB,7=Allpass1,8=Allpass2), byte bypass (0=off, 1=bypass)
+0x34  SetGain           0x01    byte ch ID (0=InA, 1=InB, 2=Out1), word level LB, HB (0x190 = +12dB, 0x0 -60dB, 400 Steps 0,18dB each)
+0x35  SetMute           0x01    byte ch ID, 0x1 = Mute, 0x0 = Normal
+0x36  SetPhase          0x01    byte ch ID, 0x0 = Normal, 0x1 = Inverse
+0x38  SetDelay          0x01    byte ch ID,  word delay (ee 24=110.982ft=33.828m=98.479ms, 0 ff = 766.239ft=680ms=233.58m, 0,01041_6 ms steps)
+0x39  SetSignalSource   0x01    byte source 0=analog, 1=pink noise,2=white noise,3=sine wave, 1 byte frequency 0=20Hz,1=25,2=31.5,40,50,63,80,100,125,160,200,250,315,400,500,630,800,1k,1.25k,1.6k,2k,2.5k,3.15,4,5,6.3,8,10,12.5,16,1e=20
+0x3a  SetRouting        0x01    byte ch ID (target),  byte input 0 = none, 1=InA, 2=InB, 3=both
+0x3b  SetChannelLink    0x01    byte ch ID, 1 byte link, this is a bitfield bit 1=Out1/InA, bit2=Out2/InB, bit3(4)=Out3, bit4(8)=Out4, bit5(10)=Out5, bit6(20)=Out6
+0x3c  SetPEQBypass      0x01    byte ch ID, 1 byte bypass (0=PEQ on, 1=bypass)
+0x3d  SetChannelName    0x01    byte ch ID, 8 byte name
+0x3e  SetGate           0x01    byte ch ID, 2 byte attack LB, HB (0=1ms, 0x22=35ms e6 03 = 999ms), 2 byte release (b7 0b = 3000ms, 09 = 10ms), 2 byte hold (0x9 =10ms, e603 = 999ms),byte Threshold (0=-90dB, 0x70=-34, b4 = 0dB, 0.5dB steps), 0 
+0x3f  SetPeakLimit      0x01    byte ch ID, word attack (e6 3 = 999ms, 0 = 1ms), word release (b7 b = 3000ms, 9=10ms), word reserved, word threshold (0=-90dB, dc=+20dB, 0.5dB steps)
+0x40  GetLevels?        0x40    6 groups of 6 byte each, then 2 byte
+0x41  SetMixerGain      0x01    byte ch ID (target ch),  byte ch ID (source ch), word gain (0=-60db,50=-20db 0.5db steps, 51=-19.9..18 1= 0, 0.1dB steps)
+0x48  SetGEQLevel       0x01    byte ch ID (0x0 = InA, 0x1=InB), byte 1 band (0 = 20Hz, etc.), byte 3 = level (0x0 = -12dB, 0,1dB per Step, 0xf0 =+12dB), byte4 = 0 
+0x49  SetGEQBypass      0x01    byte ch ID, byte bypass (0x01 bypass, 0x0 off)
+
+
+RCode Name              Payload
+0x01  ACK               none
+0x02  InvalidCommand    none
+0x10  ?                 1 byte 19, not clear
+0x13  Version           product/version string
+0x14  ActivePreset      1 byte Preset slot ID (0 = FF, 1-14 = U01-U20)
+0x19  BaseSettings      byte device ID, 2 19, 4 byte "0000" 30 30 30 30, 0 0 27 f 0 1, 4 byte password, byte 2 
+0x24  Configuration     byte page ID 0-12, 
+                        combined payload of 13 pages (each time substracting the pageID) is as follows 
+                        struct: word unknown ff 0|ff, 
+                        0x0002 - current preset name 14 byte, 
+                        0x0016 - InChannel config *2 (InA, InB), 
+                        0x018e - OutChannel config *6 (Out1-Out6),
+                        0x03da - 1 word mute IN : 0=none, 1=InA, 2=InB, 3=both
+                        0x03dc - 1 word mute OUT: bitfield woth channel bitmask, e.g. x12 = Out2 and Out5 muted
+                        0x03de - 3 word ??
+                        0x03e4 - 1 word 0x1
+                        0x03e6 - 4 word 0x0
+                        0x03ee - 1 word test tone (0=off, 1=pink, 2=white, 3=sine wave)
+                        0x03f0 - 1 word test tone frequency (0=20Hz, then passing through the 1/3 oct bands like GEQ)
+                        0x03f2 - 1 word delay unit 0=ms, 1=m, 2=ft
+                        0x03f4 - 3 word 0x0
+
+  InChannel config (len = 0xbc)
+  0x00 - 8 byte channel name
+  0x08 - 4 word gate config
+  0x10 - 31 word GEQ config
+  0x4e - 8*6byte PEQ settings (0-7), each: word gain, word frequency, byte Q, byte type (see ccode 0x33)
+  0x7e - 1 word HP frequency (see ccode 0x32)
+  0xb0 - 1 word LP frequency (see ccode 0x31)
+  0xb2 - 1 byte HP Slope (see ccode 0x32)
+  0xb3 - 1 byte LP Slope (see ccode 0x31)
+  0xb4 - word gain
+  0xb6 - word phase
+  0xb8 - word delay
+  0xba - word routing bitmask (InA=1, InB=2)
+  
+  OutChannel config (len = 0x64)
+  0x00 - 8 byte channel name (zero padded)
+  0x08 - 1 word routing (0 = none, 1=InA, 2=InB, 3=both, see ccode 0x3a)
+  0x0a - 1 word InA MixerGain (see ccode 0x41)
+  0x0c - 1 word InB MixerGain (see ccode 0x41)
+  0x0e - 1 word HP frequency (see ccode 0x32)
+  0x10 - 1 word LP frequency (see ccode 0x31)
+  0x12 - 1 byte HP Slope (see ccode 0x32)
+  0x13 - 1 byte LP Slope (see ccode 0x31)
+  0x14 - 9*6byte PEQ settings (0-8), each: word gain, word frequency, byte Q, byte type (see ccode 0x33)
+  0x4a - word compressor ratio (see ccode 0x30)
+  0x4c - word compressor attack
+  0x4e - word compressor release
+  0x50 - word compressor knee
+  0x52 - word compressor threshold
+  0x54 - word Limit attack (see ccode 0x3f)
+  0x56 - word Limit release (see ccode 0x3f)
+  0x58 - word Limit reserved (see ccode 0x3f)
+  0x5a - word Limit threshold (see ccode 0x3f)
+  0x5c - word gain (see ccode 0x36)
+  0x5e - word phase (see ccode 0x36)
+  0x60 - word delay (see ccode 0x38)
+  0x62 - word routing bitmask (Out1=1,Out2=2,Out3=4,Out4=8,Out5=10,Out6=20)
+  
+0x28  Config            same as 24, but response to 0x28 command
+0x29  PresetName        1 byte preset ID, string preset name
+0x2c                    6 byte 0 27 f 0 0 0, after 2c command, no idea
+0x2d  Unlock Response   1 byte 0, 1 byte result 0 = failed, 1 = ok

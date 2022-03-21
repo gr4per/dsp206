@@ -1,0 +1,15 @@
+{
+  "name": "dsp206proxy",
+  "version": "1.0.0",
+  "description": "Test proxy for DSP 206 reverse eng",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "gr4per",
+  "license": "custom",
+  "dependencies": {
+    "crc": "^4.1.0",
+    "node-tcp-proxy": "^0.0.26"
+  }
+}
