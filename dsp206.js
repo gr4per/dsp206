@@ -150,7 +150,7 @@ class Dsp206 {
     });
 
     this.client.on('error', (err) => {
-      console.log('socket error: ', e);
+      console.log('socket error: ', err);
       this.clientStatus = 1;
       this.client.end((err) => {
           console.log("socket end completed");
@@ -1011,6 +1011,7 @@ class Dsp206 {
 
 async function test() {
 
+  console.log("Running test...");
   //let dsp206 = new Dsp206(250, "192.168.188.22");
   let dsp206 = new Dsp206(250, "192.168.8.7");
   
@@ -1096,6 +1097,6 @@ async function test() {
   console.log("client shut down, ending test.");
 }
 
-test();
+//test();
 
 exports.Dsp206 = Dsp206;
