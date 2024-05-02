@@ -65,8 +65,8 @@ RCode Name              Payload
                         combined payload of 13 pages (each time substracting the pageID) is as follows 
                         struct: word unknown ff 0|ff, 
                         0x0002 - current preset name 14 byte, 
-                        0x0016 - InChannel config *2 (InA, InB), 
-                        0x018e - OutChannel config *6 (Out1-Out6),
+                        0x0010 - InChannel config *2 (InA, InB), 
+                        0x0128 - OutChannel config *6 (Out1-Out6),
                         0x03da - 1 word mute IN : 0=none, 1=InA, 2=InB, 3=both
                         0x03dc - 1 word mute OUT: bitfield woth channel bitmask, e.g. x12 = Out2 and Out5 muted
                         0x03de - 3 word ??
@@ -77,19 +77,19 @@ RCode Name              Payload
                         0x03f2 - 1 word delay unit 0=ms, 1=m, 2=ft
                         0x03f4 - 3 word 0x0
 
-  InChannel config (len = 0xbc)
+  InChannel config (len = 0x8c)
   0x00 - 8 byte channel name
   0x08 - 4 word gate config
   0x10 - 31 word GEQ config
   0x4e - 8*6byte PEQ settings (0-7), each: word gain, word frequency, byte Q, byte type (see ccode 0x33)
   0x7e - 1 word HP frequency (see ccode 0x32)
-  0xb0 - 1 word LP frequency (see ccode 0x31)
-  0xb2 - 1 byte HP Slope (see ccode 0x32)
-  0xb3 - 1 byte LP Slope (see ccode 0x31)
-  0xb4 - word gain
-  0xb6 - word phase
-  0xb8 - word delay
-  0xba - word routing bitmask (InA=1, InB=2)
+  0x80 - 1 word LP frequency (see ccode 0x31)
+  0x82 - 1 byte HP Slope (see ccode 0x32)
+  0x83 - 1 byte LP Slope (see ccode 0x31)
+  0x84 - word gain
+  0x86 - word phase
+  0x88 - word delay
+  0x8a - word routing bitmask (InA=1, InB=2)
   
   OutChannel config (len = 0x64)
   0x00 - 8 byte channel name (zero padded)

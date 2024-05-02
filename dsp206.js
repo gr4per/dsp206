@@ -28,6 +28,12 @@ const maxClosingDelay = 1000;
 
 class Dsp206 {
 
+  /**
+   * 
+   * @param {*} deviceID  int < 256
+   * @param {*} ipAddress string ipv4 of the dsp206
+   * @param {*} options rerun - "false" will explicitly drop all commands failed due to connectivity
+   */
   constructor(deviceID, ipAddress, options) {
     this.deviceID = deviceID;
     this.ipAddress = ipAddress;
@@ -35,6 +41,7 @@ class Dsp206 {
     this.lastResponse = null;
     this.clientStatus = 0; // 0 = no socket(socket == null), 1 = socket ending, 2 = socket destroyed (socket.destroyed), 3 = socket connecting (socket.pending), 4 = resending, 5 = connected
     this.client = null;
+    this.rerun = (options && options.rerun == "false")?false:true;
     this.initConnection();
   }
   
@@ -58,6 +65,7 @@ class Dsp206 {
         this.clientStatus = 1;
       }
       else if(this.clientStatus == 1 && deltaMillis > maxIdleMillis+maxClosingDelay) {
+        console.log("destroying ending socket.");
         this.client.destroy();
         this.clientStatus = 2;
       }
@@ -67,6 +75,7 @@ class Dsp206 {
       this.sendCommand(0x12,[]); // send a ping to keep dsp happy
     }
     if(this.clientStatus == 0 || this.clientStatus == 2) {
+      console.log("no socket or destroyed socket, checkConnection will init new one...");
       this.clientStatus == 0;
       this.initConnection();
     }
@@ -79,16 +88,28 @@ class Dsp206 {
     }
     this.clientStatus = 3;
     this.lastResponse = new Date(); // give us some time before the check starts acting
-    this.interval = setInterval(this.checkConnection.bind(this),2000); // regular sanity check on the connection
+    if(!this.interval) {
+      console.log("setting up regular connection check interval");
+      this.interval = setInterval(this.checkConnection.bind(this),2000); // regular sanity check on the connection
+    }
     
     // options port, host, localAddress, localPort, family, hints, lookup, noDelay, keepAlive, keepAliveInitialDelay, timeout
     this.client = net.createConnection({ host:this.ipAddress, port: 9761 }, async () => {
       // 'connect' listener.
-      console.log('connected to server!');
+      console.log('connected to server! sending initial cmd 0x10...');
       this.clientStatus = 4;
       // now we have to make sure pending commands are flushed to server
-      await this.rerunPendingCommands();
+      if(this.rerun) {
+        console.log("rerunning pending commands...");
+        await this.rerunPendingCommands();
+      }
+      else {
+        console.log("skipping rerun due to config setting");
+      }
       this.clientStatus = 5;
+      this.sendCommand(0x10,[]); // send a ping to keep dsp happy
+      console.log("client status now set to 5");
+      console.log("received initial response");
     });
     this.client.on('data', (data) => {
       this.lastResponse = new Date();
@@ -101,7 +122,10 @@ class Dsp206 {
       }
       //console.log("received data: ", data);
       if(data[0] != 0x10 || data[1] != 0x2) {
-        console.error("incorrect response header!");  
+        console.error("incorrect response header!");
+        this.client.destroy();
+        this.clientStatus = 2;
+
         return;
       }
       if(data[3] != 0x0) {
@@ -127,14 +151,14 @@ class Dsp206 {
       }
       if(data[5+dataLen] != 0x10 || data[6+dataLen] != 0x3) {
         let msg = "incorrect eom marker " + data[5+dataLen] + " " + data[6+dataLen] + ", should be 0x10 0x3" + ", data type = " + typeof data + ", JSON=" + JSON.stringify(data);  
-        resp.reject(new Error(msg));
+        resp.reject(msg);
         return;
       }
       let checksum = data[7+dataLen];
       if(typeof checksum == 'undefined') {
         let msg = "response doesn't have a checksum. dataLen = " + dataLen + ", data = " + JSON.stringify(data);
         console.log(msg);
-        resp.reject(new Error(msg));
+        resp.reject(msg);
         return;
       }
       let lcs = 0;
@@ -715,12 +739,18 @@ class Dsp206 {
   parseGeqConfig(bytes, offset) {
     let res = [];
     for(let i = 0; i < 31;i++) {
-      let bc = {bandId:i};
-      bc.frequency = this.wordToFreq1_3(i);
-      bc.level = this.convertToDb2(this.parseWord(bytes,offset+i*2));
+      let bc = this.parseSingleGeqBand(i,bytes,offset+i*2);
       res[i] = bc;
     }
     return res;
+  }
+
+  parseSingleGeqBand(bandId, bytes, offset) {
+    let bc = {};
+    bc.bandId = bandId;
+    bc.frequency = this.wordToFreq1_3(bandId);
+    bc.level = this.convertToDb2(this.parseWord(bytes,offset));
+    return bc;
   }
   
   parseGateConfig(bytes, offset){
@@ -1012,8 +1042,8 @@ class Dsp206 {
 async function test() {
 
   console.log("Running test...");
-  //let dsp206 = new Dsp206(250, "192.168.188.22");
-  let dsp206 = new Dsp206(250, "192.168.8.7");
+  let dsp206 = new Dsp206(250, "192.168.188.22",{rerun:"false"});
+  //let dsp206 = new Dsp206(250, "192.168.8.7");
   
   let res = null;
   
@@ -1089,8 +1119,9 @@ async function test() {
   catch(e) {
     console.error(e);
   }
-  res = await dsp206.getConfig(null);
+  /*res = await dsp206.getConfig(null);
   console.log("currentConfig: " + JSON.stringify(res, null, 2));
+  */
   //await sleep(30000);
   await dsp206.close();
   

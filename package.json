@@ -4,12 +4,21 @@
   "description": "Test proxy for DSP 206 reverse eng",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "nodemon src/index.js"
   },
   "author": "gr4per",
   "license": "custom",
   "dependencies": {
     "crc": "^4.1.0",
-    "node-tcp-proxy": "^0.0.26"
+    "node-tcp-proxy": "^0.0.26",
+    "body-parser": "^1.19.0",
+    "cors": "^2.8.5",
+    "express": "^4.17.1",
+    "nodemon": "^2.0.7",
+    "winston": "^3.3.3",
+    "winston-loggly-bulk": "^3.2.1",
+    "ws": "^7.4.4"
   }
 }
+
